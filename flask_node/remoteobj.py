@@ -3,7 +3,7 @@ import inspect
 import requests
 
 
-class RxClass():
+class TxClass():
     def __init__(self, name=None, host='localhost', port='5000', debug=False):
         name = name or '{}_api'.format(self.__class__.__name__)
         self.app = Flask(name)
@@ -59,7 +59,7 @@ class RxClass():
         self.app.run(host=self.host, port=self.port, debug=self.debug)
 
 
-class TxClass():
+class RxClass():
     def __init__(self, host='localhost', port='5000'):
         self.host = host
         self.port = port
