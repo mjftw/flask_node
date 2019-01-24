@@ -169,8 +169,17 @@ class RxClass():
         return 'http://{}{}'.format(
             self.host, ':{}'.format(self.port) if self.port else '')
 
-    def pull_methods(self):
-        r = requests.get(self.url)
+    def pull_methods(self, timeout=0.5, max_tries=20):
+        r = None
+        for i in range(0, max_tries):
+            try:
+                r = requests.get(self.url, timeout=timeout)
+                break
+            except ConnectionError as e:
+                if i >= max_tries-1:
+                    raise e
+                else:
+                    time.sleep(0.1)
 
         api_info = r.json()
         methods = api_info['methods']
