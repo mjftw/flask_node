@@ -1,13 +1,14 @@
 from flask import Flask, request, jsonify
 import inspect
 import requests
+from requests.exceptions import ConnectionError
 from copy import copy
 from threading import Thread, Event
 import time
 
 class TxClass():
     def __init__(self, name=None, host=None, port=None, debug=None):
-        name = name or '{}_api'.format(self.__class__.__name__)
+        self.name = name or '{}_api'.format(self.__class__.__name__)
         self.app = Flask(name)
         self.host = host or 'localhost'
         self.port = port or '5000'
@@ -26,12 +27,21 @@ class TxClass():
             methods = {}
             for m in method_names:
                 methods = ({**methods, **get_method_call(m)})
-            return jsonify(methods)
+            return methods
+
+        def get_api_info():
+            api_info = {
+                'name': self.name,
+                'methods': get_methods(),
+            }
+
+            return jsonify(api_info)
+
 
         self.app.add_url_rule(
             '/',
             '/',
-            view_func=get_methods,
+            view_func=get_api_info,
             methods=['GET'])
 
         @self.app.route('/<m>', methods=['GET'])
@@ -41,8 +51,7 @@ class TxClass():
                 return '', 404
 
             al = inspect.getargspec(func).args[1:] or []
-            if request.method == 'GET':
-                return jsonify(get_method_call(m))
+            return jsonify(get_method_call(m))
 
         @self.app.route('/<m>', methods=['POST'])
         def api_call(m):
@@ -153,6 +162,7 @@ class RxClass():
     def __init__(self, host='localhost', port='5000'):
         self.host = host
         self.port = port
+        self.remote_name = None
 
     @property
     def url(self):
@@ -161,7 +171,10 @@ class RxClass():
 
     def pull_methods(self):
         r = requests.get(self.url)
-        methods = r.json()
+
+        api_info = r.json()
+        methods = api_info['methods']
+        self.remote_name = api_info['name']
 
         for name, arg_names in methods.items():
             setattr(self, name, self._method_factory(name, arg_names))
