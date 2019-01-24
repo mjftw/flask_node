@@ -22,17 +22,32 @@ class TxClass():
             return {m: inspect.getargspec(getattr(self, m)).args[1:]}
 
         def get_methods():
-            method_names = [m[0] for m in inspect.getmembers(self, predicate=inspect.ismethod)]
-            method_names = filter(lambda m: not (m.startswith('_') or m == 'run_api'), method_names)
+            method_names = [m[0] for m in inspect.getmembers(self,
+                predicate=inspect.ismethod)]
+            method_names = filter(lambda m: not (m.startswith('_') or m == 'run_api'),
+                method_names)
             methods = {}
             for m in method_names:
                 methods = ({**methods, **get_method_call(m)})
             return methods
 
+        def get_variables():
+            variable_names = [m[0] for m in inspect.getmembers(
+                self, predicate=lambda x: not inspect.ismethod(x))]
+            variable_names = filter(lambda m: not (m.startswith('_')),
+                variable_names)
+
+            variables = {}
+            for v in variable_names:
+                variables = ({v: str(getattr(self, v)) for v in variable_names})
+            return variables
+
+
         def get_api_info():
             api_info = {
                 'name': self.name,
                 'methods': get_methods(),
+                'variables': get_variables()
             }
 
             return jsonify(api_info)
@@ -46,18 +61,24 @@ class TxClass():
 
         @self.app.route('/<m>', methods=['GET'])
         def api_discover(m):
-            func = getattr(self, m, None)
-            if not func:
+            attr = getattr(self, m, None)
+            if not attr:
                 return '', 404
 
-            al = inspect.getargspec(func).args[1:] or []
+            if not callable(attr):
+                return str(attr)
+
+            al = inspect.getargspec(attr).args[1:] or []
             return jsonify(get_method_call(m))
 
         @self.app.route('/<m>', methods=['POST'])
         def api_call(m):
             func = getattr(self, m, None)
             if not func:
-                return '', 404
+                return 'Method not found', 404
+
+            if not callable(func):
+                return 'Forbidden: Cannot directly set variables', 403
 
             al = inspect.getargspec(func).args[1:] or []
             dl = inspect.getargspec(func).defaults or []
