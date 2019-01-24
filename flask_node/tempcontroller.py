@@ -42,12 +42,6 @@ class TempController():
     def set_tolerance(self, tolerance):
         self.tolerance = float(tolerance)
 
-    def get_target(self):
-        return self.target_temp
-
-    def get_tolerance(self):
-        return self.tolerance
-
     def _init_nodes(self):
         self.temp.pull_methods()
         self.plug.pull_methods()
