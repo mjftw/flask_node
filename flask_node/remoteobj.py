@@ -218,3 +218,31 @@ class RxClass():
 
         f.__name__ = name
         return f
+
+
+class RxReadSimple():
+    def __init__(self, remote_host, remote_port, remote_method,
+            remote_args=None, work_func=None):
+        self.remote_host = remote_host
+        self.remote_port = remote_port
+        self.remote_method = remote_method
+        self.remote_args = remote_args or ()
+        self.work_func = work_func or print
+        self.remote = RxClass(host=remote_host, port=remote_port)
+
+        self._initialised = False
+
+    def read(self):
+        if not self._initialised:
+            self.remote.pull_methods()
+            self._initialised = True
+
+        method = getattr(self.remote, self.remote_method, None)
+
+        if not method:
+            raise RuntimeError('Remote object {}:{} does not have method {}'.format(
+                self.remote_host, self.remote_port, self.remote_method))
+
+        value = method(*self.remote_args)
+
+        self.work_func(value)
