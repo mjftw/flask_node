@@ -222,12 +222,12 @@ class RxClass():
 
 class RxReadSimple():
     def __init__(self, remote_host, remote_port, remote_method,
-            remote_args=None, work_func=None):
+            remote_args=None, callback=None):
         self.remote_host = remote_host
         self.remote_port = remote_port
         self.remote_method = remote_method
         self.remote_args = remote_args or ()
-        self.work_func = work_func or print
+        self.callback = callback or print
         self.remote = RxClass(host=remote_host, port=remote_port)
 
         self._initialised = False
@@ -245,4 +245,4 @@ class RxReadSimple():
 
         value = method(*self.remote_args)
 
-        self.work_func(value)
+        self.callback(value)
