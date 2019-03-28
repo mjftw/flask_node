@@ -30,7 +30,7 @@ class TempController():
             self.cold.off()
         elif temp_value > self.target + self.tolerance:
             self.hot.off()
-            self.cold_on()
+            self.cold.on()
         else:
             self.hot.off()
             self.cold.off()
