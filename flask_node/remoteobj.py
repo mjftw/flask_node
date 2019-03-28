@@ -14,7 +14,6 @@ class TxClass():
         self.port = port or '5000'
         self.debug = debug or False
 
-        self.start_time = None
         if not hasattr(self, 'methods'):
             self.methods = ['GET']
 
@@ -115,7 +114,8 @@ class TxClassLooping(TxClass):
         super().__init__(name, host, port, debug)
 
     def run_api(self):
-        self.start()
+        self._loop_thread = self._thread_factory()
+        self._loop_thread.start()
         super().run_api()
 
     def pause(self):
@@ -125,27 +125,21 @@ class TxClassLooping(TxClass):
         self._pause_event.clear()
 
     def stop(self):
-        print("STOP")
         if self._loop_thread and self._loop_thread.isAlive():
             self._stop_event.set()
             self._loop_thread.join()
             self._loop_thread = None
-            print("STOPPED")
 
-    def start(self):
-        print("START")
-        if not self._loop_thread or not self._loop_thread.isAlive():
-            self._loop_thread = self._thread_factory()
-            self._loop_thread.start()
-            print("STARTED")
-
-    def get_running_state(self):
+    @property
+    def running_state(self):
         if self._stop_event.is_set():
             return 'stopped'
         elif self._pause_event.is_set():
             return 'paused'
-        else:
+        elif self._loop_thread and self._loop_thread.isAlive():
             return 'running'
+        else:
+            return 'unknown'
 
     def _thread_factory(self):
         return TxClassLoopThread(
