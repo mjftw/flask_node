@@ -15,11 +15,13 @@ def main():
     )
     hot_socket = SmartPlugTx(
         name="HeatMat",
+        socket=1,
         host=ipaddr,
         port=5020
     )
     cold_socket = SmartPlugTx(
         name="Fridge",
+        socket=2,
         host=ipaddr,
         port=5030
     )
@@ -33,7 +35,7 @@ def main():
         hot_port=hot_socket.port,
         cold_host=cold_socket.host,
         cold_port=cold_socket.port,
-        target_temp=19,
+        target=19,
         tolerance=0.15,
         loop_sleep=5,
         pause_sleep=1
