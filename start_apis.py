@@ -13,20 +13,27 @@ def main():
         host=ipaddr,
         port=5010
     )
-    smart_plug = SmartPlugTx(
-        name="Heater",
+    hot_socket = SmartPlugTx(
+        name="HeatMat",
         host=ipaddr,
         port=5020
     )
-    temp_control = TempControllerTx(
-        name='TempController',
+    cold_socket = SmartPlugTx(
+        name="Fridge",
         host=ipaddr,
-        port=5030,
-        temp_host=temp_sensor.host,
-        temp_port=temp_sensor.port,
-        plug_host=smart_plug.host,
-        plug_port=smart_plug.port,
-        target_temp=18.5,
+        port=5030
+    )
+    temp_control = TempControllerTx(
+        name='BrewFridge',
+        host=ipaddr,
+        port=5040,
+        sensor_host=temp_sensor.host,
+        sensor_port=temp_sensor.port,
+        hot_host=hot_socket.host,
+        hot_port=hot_socket.port,
+        cold_host=cold_socket.host,
+        cold_port=cold_socket.port,
+        target_temp=19,
         tolerance=0.15,
         loop_sleep=5,
         pause_sleep=1
@@ -34,7 +41,8 @@ def main():
 
     threads = [
         threading.Thread(target=temp_sensor.run_api),
-        threading.Thread(target=smart_plug.run_api),
+        threading.Thread(target=hot_socket.run_api),
+        threading.Thread(target=cold_socket.run_api),
         threading.Thread(target=temp_control.run_api),
     ]
 
