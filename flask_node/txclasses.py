@@ -1,6 +1,6 @@
 from .remoteobj import TxClass, TxClassLooping
 from .tempsensor import TempSensor
-from .energenie import SmartPlug
+from energenie import SmartPlug
 from .tempcontroller import TempController
 
 class TempSensorTx(TempSensor, TxClass):
@@ -9,8 +9,8 @@ class TempSensorTx(TempSensor, TxClass):
         TxClass.__init__(self, name, host, port, debug)
 
 class SmartPlugTx(SmartPlug, TxClass):
-    def __init__(self, name=None, host=None, port=None, debug=None):
-        SmartPlug.__init__(self)
+    def __init__(self, socket, name=None, host=None, port=None, debug=None):
+        SmartPlug.__init__(self, socket)
         TxClass.__init__(self, name, host, port, debug)
 
 class TempControllerTx(TempController, TxClassLooping):

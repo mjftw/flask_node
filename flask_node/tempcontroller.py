@@ -4,14 +4,14 @@ from datetime import datetime
 from .remoteobj import RxClass
 
 class TempController():
-    def __init__(self, temp_host, temp_port, plug_host, plug_port,
-            target_temp, tolerance):
-        self.temp = RxClass(host=temp_host, port=temp_port)
-        self.plug = RxClass(host=plug_host, port=plug_port)
+    def __init__(self, target_temp, tolerance,
+            sensor_host, sensor_port, hot_host, hot_port, cold_host, cold_port):
+        self.sensor = RxClass(host=sensor_host, port=sensor_port)
+        self.hot = RxClass(host=hot_host, port=hot_port)
+        self.cold = RxClass(host=cold_host, port=cold_port)
+
         self.target_temp = target_temp
         self.tolerance = tolerance
-
-        self.heater_state = None
 
         self._initialised = False
 
@@ -20,21 +20,24 @@ class TempController():
             self._init_nodes()
             self._initialised = True
 
-        # self.plug.get_state()
-        temp_value = float(self.temp.get_value())
+        # self.hot.get_state()
+        temp_value = float(self.sensor.get_value())
         print('Temperature: {}, Target: {}'.format(temp_value, self.target_temp))
         print('Heater state: {}'.format(self.heater_state))
         with open('temperature.log', 'a') as f:
-            f.write('date: {}, temp: {}, target: {}, heater: {}\n'.format(
+            f.write('date: {}, sensor: {}, target: {}, heater: {}\n'.format(
                 datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                 temp_value, self.target_temp, self.heater_state))
 
         if temp_value < self.target_temp - self.tolerance:
-            self.plug.set_socket('all', 'on')
-            self.heater_state = 'on'
+            self.hot.on()
+            self.cold.off()
         elif temp_value > self.target_temp + self.tolerance:
-            self.plug.set_socket('all', 'off')
-            self.heater_state = 'off'
+            self.hot.off()
+            self.cold_on()
+        else:
+            self.hot.off()
+            self.cold.off()
 
     def set_target(self, target):
         self.target_temp = float(target)
@@ -43,9 +46,9 @@ class TempController():
         self.tolerance = float(tolerance)
 
     def _init_nodes(self):
-        self.temp.pull_methods()
-        self.plug.pull_methods()
+        self.sensor.pull_methods()
+        self.hot.pull_methods()
         time.sleep(1)
 
-        self.plug.set_socket('all', 'off')
+        self.hot.set_socket('all', 'off')
         self.heater_state = 'off'
