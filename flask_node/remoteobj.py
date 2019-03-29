@@ -179,6 +179,10 @@ class RxClass():
         self.port = port
         self.remote_name = None
 
+    def __repr__(self):
+        return 'RxClass [{}] [{}]'.format(
+            self.remote_name or 'uninitialised', self.url)
+
     @property
     def url(self):
         return 'http://{}{}'.format(
