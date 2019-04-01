@@ -28,8 +28,7 @@ class SmartPlug():
         switch_off(self.socket)
         self._is_on = False
 
-    def train_socket(self, socket):
-        self._check_socket(socket)
+    def train_socket(self):
         print('''
         ================================================
          Beginning manual socket training on socket: {}
@@ -37,12 +36,13 @@ class SmartPlug():
 
         Hold green button on plug until LED flashes rapidly
         Note: LED will flash slowly at first, hold until it flashes faster
+
+        Training will start in 10 seconds...
         '''.format(self.socket))
 
-        input('Press enter when done')
+        time.sleep(10)
         for i in range(0, 4):
-            switch(socket, 'on')
+            self.on()
             time.sleep(0.25)
 
         print('Socket should now be trained')
-        input('Press enter to test training by toggling socket twice')
