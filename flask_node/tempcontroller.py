@@ -19,11 +19,8 @@ class TempController():
         if not self._initialised:
             self._init_nodes()
 
-        # self.hot.get_state()
-        temp_value = float(self.sensor.get_value())
-        print('Temperature: {}, Target: {}'.format(temp_value, self.target))
-        print('Hot on?: {}'.format(self.hot.is_on()))
-        print('Cold on?: {}'.format(self.cold.is_on()))
+        temp_value = self.sensor.get_value()
+        state = self.get_state()
 
         if temp_value < self.target - self.tolerance:
             self.hot.on()
@@ -31,9 +28,32 @@ class TempController():
         elif temp_value > self.target + self.tolerance:
             self.hot.off()
             self.cold.on()
-        else:
+        elif (state == 'Heating' and temp_value > self.target or
+                state == 'Cooling' and temp_value < self.target):
             self.hot.off()
             self.cold.off()
+
+    def get_state(self):
+        if not self._initialised:
+            self._init_nodes()
+
+        heating = self.hot.is_on()
+        cooling = self.cold.is_on()
+
+        if heating and not cooling:
+            return 'Heating'
+        elif cooling and not heating:
+            return 'Cooling'
+        elif heating and cooling:
+            return 'ERROR: Heating & Cooling'
+        else:
+            return 'Idle'
+
+    def get_temperature(self):
+        if not self._initialised:
+            self._init_nodes()
+
+        return self.sensor.get_value()
 
     def set_target(self, target):
         self.target = float(target)
