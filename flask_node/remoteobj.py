@@ -5,14 +5,14 @@ from requests.exceptions import ConnectionError
 from copy import copy
 from threading import Thread, Event
 import time
+from ast import literal_eval
 
 class TxClass():
-    def __init__(self, name=None, host=None, port=None, debug=None):
+    def __init__(self, name=None, host=None, port=None):
         self.name = name or '{}_api'.format(self.__class__.__name__)
         self.app = Flask(name)
         self.host = host or 'localhost'
         self.port = port or '5000'
-        self.debug = debug or False
 
         if not hasattr(self, 'methods'):
             self.methods = ['GET']
@@ -90,15 +90,26 @@ class TxClass():
                 else:
                     args.append(request.args.get(a))
 
-            return str(func(*args))
+            # Check if arg shoulf be float, int etc, and convert
+            args_typed = []
+            for a in args:
+                try:
+                    a_typed = literal_eval(a)
+                # arg not is just a string
+                except ValueError:
+                    a_typed = a
+
+                args_typed.append(a_typed)
+
+            return str(func(*args_typed))
 
     def run_api(self):
-        self.app.run(host=self.host, port=self.port, debug=self.debug)
+        self.app.run(host=self.host, port=self.port, threaded=True)
 
 
 class TxClassLooping(TxClass):
     def __init__(self, loop_method_name, loop_sleep=1, pause_sleep=None,
-            name=None, host=None, port=None, debug=None):
+            name=None, host=None, port=None):
         if not hasattr(self, loop_method_name):
             raise TypeError('Class is does not have loop method {}'.format(
                 loop_method))
@@ -111,7 +122,7 @@ class TxClassLooping(TxClass):
 
         self._loop_thread = None
 
-        super().__init__(name, host, port, debug)
+        super().__init__(name, host, port,)
 
     def run_api(self):
         self._loop_thread = self._thread_factory()
@@ -212,7 +223,10 @@ class RxClass():
                 params = dict(zip(arg_names, args))
                 method_url = '{}/{}'.format(self.url, name)
                 r = requests.post(method_url, params=params)
-                return r.text
+                try:
+                    return literal_eval(r.text)
+                except ValueError:
+                    return r.text
 
         f.__name__ = name
         return f
