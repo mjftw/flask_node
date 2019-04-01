@@ -4,7 +4,7 @@ import json
 from .remoteobj import RxClass
 
 class SnapshotSensors():
-    def __init__(self, watches):
+    def __init__(self, watches, save_func):
         '''
         Pulls data from flask sensor nodes and logs it to a database.
         @watches is a dicting listing the address and
@@ -33,6 +33,7 @@ class SnapshotSensors():
         }
         '''
         self.watches = json.loads(watches)
+        self.save_func = save_func
 
         self._initialised = False
 
@@ -47,10 +48,11 @@ class SnapshotSensors():
                 port=node['port']
             )
 
-    def record_data(self):
+    def read_data(self):
         if not self._initialised:
             self._init_nodes()
 
+        timestamp = time.time()
         data = {}
         for node in self.watches:
             if 'name' not in node:
@@ -61,9 +63,15 @@ class SnapshotSensors():
                 method = getattr(node['rxclass'], method_name, None)
                 if method:
                     data[node['name']][save_name] = method()
-                    print(data)
                 else:
-                    print('No method called: {}'.format(method_name))
+                    raise RuntimeWarning('{} has no method [{}]'.format(
+                        data[node['name']], method_name))
+
+        return (timestamp, data)
+
+    def save_data(self):
+        data = self.read_data()
+        self.save_func(data)
 
     def simplify_dataset(self):
         '''
