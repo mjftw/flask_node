@@ -43,12 +43,12 @@ class TempController(Logging):
 
                 self.idle_state()
         elif state == 'Idle':
-            if temperature >= self.tolerance:
+            if temperature >= self.setpoint + self.tolerance:
                 self.log('Too hot, State->Cooling')
                 state_next = 'Cooling'
 
                 self.cooling_state()
-            elif temperature <= self.tolerance:
+            elif temperature <= self.setpoint - self.tolerance:
                 self.log('Too cold, State->Heating')
                 state_next = 'Heating'
 
