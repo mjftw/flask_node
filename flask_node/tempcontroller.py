@@ -4,13 +4,13 @@ from datetime import datetime
 from .remoteobj import RxClass
 
 class TempController():
-    def __init__(self, target, tolerance,
+    def __init__(self, setpoint, tolerance,
             sensor_host, sensor_port, hot_host, hot_port, cold_host, cold_port):
         self.sensor = RxClass(host=sensor_host, port=sensor_port)
         self.hot = RxClass(host=hot_host, port=hot_port)
         self.cold = RxClass(host=cold_host, port=cold_port)
 
-        self.target = target
+        self.setpoint = setpoint
         self.tolerance = tolerance
 
         self._initialised = False
@@ -19,17 +19,30 @@ class TempController():
         if not self._initialised:
             self._init_nodes()
 
-        temp_value = self.sensor.get_value()
+        temperature = self.sensor.get_value()
         state = self.get_state()
 
-        if temp_value < self.target - self.tolerance:
-            self.hot.on()
-            self.cold.off()
-        elif temp_value > self.target + self.tolerance:
-            self.hot.off()
-            self.cold.on()
-        elif (state == 'Heating' and temp_value > self.target or
-                state == 'Cooling' and temp_value < self.target):
+        if state == 'Cooling':
+            if temperature <= self.setpoint:
+                # Cold enough, State->Idle
+                self.cold.off()
+                self.hot.off()
+        elif state == 'Idle':
+            if temperature >= self.tolerance:
+                # Too hot, State->Cooling
+                self.cold.on()
+                self.hot.off()
+            elif temperature <= self.tolerance:
+                # Too cold, State->Heating
+                self.cold.off()
+                self.hot.on()
+        elif state == 'Heating':
+            if temperature >= self.setpoint:
+                # Hot enough, State->Idle
+                self.cold.off()
+                self.hot.off()
+        else:
+            # This should not happen, but reset to Idle if it does
             self.hot.off()
             self.cold.off()
 
@@ -55,8 +68,8 @@ class TempController():
 
         return self.sensor.get_value()
 
-    def set_target(self, target):
-        self.target = float(target)
+    def set_setpoint(self, setpoint):
+        self.setpoint = float(setpoint)
 
     def set_tolerance(self, tolerance):
         self.tolerance = float(tolerance)
