@@ -1,9 +1,11 @@
 import time
 from datetime import datetime
+import os
 
 from .remoteobj import RxClass
+from .logging import Logging
 
-class TempController():
+class TempController(Logging):
     def __init__(self, setpoint, tolerance,
             sensor_host, sensor_port, hot_host, hot_port, cold_host, cold_port):
         self.sensor = RxClass(host=sensor_host, port=sensor_port)
@@ -15,36 +17,70 @@ class TempController():
 
         self._initialised = False
 
+        self.logfile = './TempController.log'
+        if not os.path.exists(self.logfile):
+            with open(self.logfile, 'w') as f:
+                f.write('Time,Temperature,Setpoint,Tolerance,State,StateNext\n')
+
     def update(self):
         if not self._initialised:
             self._init_nodes()
 
+        now = int(time.time())
         temperature = self.sensor.get_value()
         state = self.get_state()
+        state_next = state
+
+        self.log('State = {}'.format(state))
+        self.log('Temperature = {}'.format(temperature))
+        self.log('Setpoint = {}'.format(self.setpoint))
+        self.log('Tolerance = {}'.format(self.tolerance))
 
         if state == 'Cooling':
             if temperature <= self.setpoint:
-                # Cold enough, State->Idle
-                self.cold.off()
-                self.hot.off()
+                self.log('Cold enough, State->Idle')
+                state_next = 'Idle'
+
+                self.idle_state()
         elif state == 'Idle':
             if temperature >= self.tolerance:
-                # Too hot, State->Cooling
-                self.cold.on()
-                self.hot.off()
+                self.log('Too hot, State->Cooling')
+                state_next = 'Cooling'
+
+                self.cooling_state()
             elif temperature <= self.tolerance:
-                # Too cold, State->Heating
-                self.cold.off()
-                self.hot.on()
+                self.log('Too cold, State->Heating')
+                state_next = 'Heating'
+
+                self.heating_state()
         elif state == 'Heating':
             if temperature >= self.setpoint:
-                # Hot enough, State->Idle
-                self.cold.off()
-                self.hot.off()
+                self.log('Hot enough, State->Idle')
+                state_next = 'Idle'
+
+                self.idle_state()
         else:
-            # This should not happen, but reset to Idle if it does
-            self.hot.off()
-            self.cold.off()
+            self.log('In Error state! State->Idle')
+            state_next = 'Idle'
+
+            self.idle_state()
+
+        self.log(','.join(
+            [str(now), str(temperature), str(self.setpoint), str(self.tolerance),
+                state, state_next]),
+            file=self.logfile)
+
+    def cooling_state(self):
+        self.cold.on()
+        self.hot.off()
+
+    def idle_state(self):
+        self.hot.off()
+        self.cold.off()
+
+    def heating_state(self):
+        self.cold.off()
+        self.hot.on()
 
     def get_state(self):
         if not self._initialised:
