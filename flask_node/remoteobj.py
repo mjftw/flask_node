@@ -144,8 +144,7 @@ class TxClassLooping(TxClass):
 
 
     def stop(self):
-        self.pause_event.clear()
-        self._stop_event.clear()
+        self._stop_event.set()
 
     @property
     def running_state(self):
