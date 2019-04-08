@@ -6,6 +6,7 @@ from copy import copy
 from threading import Thread, Event
 import time
 from ast import literal_eval
+import atexit
 
 class TxClass():
     def __init__(self, name=None, host=None, port=None):
@@ -118,6 +119,7 @@ class TxClassLooping(TxClass):
         self._loop_sleep = loop_sleep
         self._pause_sleep = pause_sleep
         self._pause_event = Event()
+        self._stop_event = Event()
 
         self._loop_thread = None
 
@@ -125,7 +127,13 @@ class TxClassLooping(TxClass):
 
     def run_api(self):
         self._loop_thread = self._thread_factory()
+
+        self._pause_event.clear()
+        self._stop_event.clear()
+
         self._loop_thread.start()
+        atexit.register(self.stop)
+
         super().run_api()
 
     def pause(self):
@@ -135,30 +143,37 @@ class TxClassLooping(TxClass):
         self._pause_event.clear()
 
 
+    def stop(self):
+        self.pause_event.clear()
+        self._stop_event.clear()
+
     @property
     def running_state(self):
+        if not self._loop_thread.isAlive():
+            return 'dead'
+
         if self._pause_event.is_set():
             return 'paused'
-        elif self._loop_thread and self._loop_thread.isAlive():
-            return 'running'
         else:
-            return 'unknown'
+            return 'running'
 
     def _thread_factory(self):
         return TxClassLoopThread(
             txclass=self,
             loop_method_name=self._loop_method_name,
             pause_event=self._pause_event,
+            stop_event=self._stop_event,
             loop_sleep=self._loop_sleep,
             pause_sleep=self._pause_sleep
         )
 
 class TxClassLoopThread(Thread):
-    def __init__(self, txclass, loop_method_name, pause_event,
+    def __init__(self, txclass, loop_method_name, pause_event, stop_event,
             loop_sleep=None, pause_sleep=None):
         self.txclass = txclass
         self.loop_method_name = loop_method_name
         self.pause_event = pause_event
+        self.stop_event = stop_event
         self.loop_sleep = loop_sleep
         self.pause_sleep = pause_sleep or 0.1
 
@@ -166,11 +181,14 @@ class TxClassLoopThread(Thread):
 
     def run(self):
         loop_method = getattr(self.txclass, self.loop_method_name)
-        if self.pause_event.is_set():
-            time.sleep(self.pause_sleep)
-        else:
-            loop_method()
-            time.sleep(self.loop_sleep or 0)
+
+        while not self.stop_event.is_set():
+            if not self.stop_event.is_set():
+                if self.pause_event.is_set():
+                    time.sleep(self.pause_sleep)
+                else:
+                    loop_method()
+                    time.sleep(self.loop_sleep or 0)
 
 
 class RxClass():
