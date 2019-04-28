@@ -142,19 +142,31 @@ class TxClassLooping(TxClass):
     def resume(self):
         self._pause_event.clear()
 
-
     def stop(self):
         self._stop_event.set()
 
     @property
     def running_state(self):
-        if not self._loop_thread.isAlive():
+        if not self._loop_thread or not self._loop_thread.isAlive():
             return 'dead'
 
         if self._pause_event.is_set():
             return 'paused'
         else:
             return 'running'
+
+    @property
+    def loop_sleep(self):
+        if self._loop_thread:
+            return self._loop_thread.loop_sleep
+        else:
+            return self._loop_sleep
+
+    def set_loop_sleep(self, loop_sleep):
+        self._loop_sleep = loop_sleep
+        if self._loop_thread:
+            self._loop_thread.loop_sleep = loop_sleep
+
 
     def _thread_factory(self):
         return TxClassLoopThread(
