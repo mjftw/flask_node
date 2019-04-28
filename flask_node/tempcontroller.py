@@ -82,6 +82,20 @@ class TempController(Logging):
         self.cold.off()
         self.hot.on()
 
+    def get_state_enum(self)
+        state = self.get_state()
+
+        if(state == 'Heating'):
+            return 2
+        if(state == 'Cooling'):
+            return 1
+        if(state == 'Idle'):
+            return 0
+
+        # Error state
+        return -1
+
+
     def get_state(self):
         if not self._initialised:
             self._init_nodes()
