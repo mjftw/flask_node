@@ -3,7 +3,7 @@ import json
 
 from .remoteobj import RxClass
 
-class SnapshotSensors():
+class SampleSensors():
     def __init__(self, watches, save_func):
         '''
         Pulls data from flask sensor nodes and logs it to a database.

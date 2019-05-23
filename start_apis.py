@@ -26,7 +26,14 @@ def main():
     temp_sensor = TempSensorTx(
         name="TempSensor",
         host=ipaddr,
-        port=5010
+        port=5010,
+        serialno='28-02029245757f'
+    )
+    temp_sensor_ambient = TempSensorTx(
+        name="TempSensorAmbient",
+        host=ipaddr,
+        port=5060,
+        serialno='28-021792455c61'
     )
     hot_socket = SmartPlugTx(
         name="HeatMat",
@@ -83,11 +90,12 @@ def main():
     )
 
     threads = [
-        threading.Thread(setpoint=temp_sensor.run_api),
-        threading.Thread(setpoint=hot_socket.run_api),
-        threading.Thread(setpoint=cold_socket.run_api),
-        threading.Thread(setpoint=temp_control.run_api),
-        threading.Thread(setpoint=data_logger.run_api),
+        threading.Thread(target=temp_sensor.run_api),
+        threading.Thread(target=temp_sensor_ambient.run_api),
+        threading.Thread(target=hot_socket.run_api),
+        threading.Thread(target=cold_socket.run_api),
+        threading.Thread(target=temp_control.run_api),
+        threading.Thread(target=data_logger.run_api),
     ]
 
     for t in threads:

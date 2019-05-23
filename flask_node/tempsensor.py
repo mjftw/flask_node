@@ -10,8 +10,9 @@ class TempSensor():
     w1_bus_path = '/sys/bus/w1/devices'
     # Known Sensors:
     #   28-02029245757f
-    def __init__(self, serialno=None):
-        self.serialno = serialno or '28-02029245757f'
+    #   28-021792455c61
+    def __init__(self, serialno):
+        self.serialno = serialno
         self.read_path = os.path.join(self.w1_bus_path, self.serialno, 'w1_slave')
 
     def get_value(self):
